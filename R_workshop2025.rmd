@@ -1,0 +1,253 @@
+---
+title: "Intermediate R Workshop"
+author: "Jaime Hsu, Department of Sociology, UT Austin"
+date: "`r Sys.Date()`"
+output: word_document
+geometry: margin=1in
+indent: true
+chunk_output_type: console
+subtitle: Reproducible Workflow
+mainfont: Times New Roman
+citeproc: false
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+library(tibble)
+library(gtsummary)
+library(tidyverse)
+library(arsenal)
+library(haven)
+library(survey)
+library(labelled)
+library(table1)
+library(officer)
+library(lme4)
+library(modelsummary)
+library(lmerTest)
+library(ggeffects)
+
+
+df <- read_dta("/Users/AntonieHsu/Library/CloudStorage/Box-Box/Teaching Materials/R workshop/2025/2025workshop_rdata.dta")
+
+
+df<- df%>%
+  mutate(genrelns = to_factor(genrelns),
+         fem = ifelse(fem==1, "Female", "Male"), 
+         pfem= ifelse(pfem==1, "Female", "Male"),
+         postgrad = to_factor(postgrad),
+         fem = to_factor(fem), 
+         pfem = to_factor(pfem), 
+         race = to_factor(race), 
+         hhincome_max = to_factor(hhincome_max), 
+         kidage = to_factor(kidage))
+ 
+  
+
+df<- df%>%
+  set_variable_labels(genrelns = "Gender-Relational Contexts", 
+                      depsym = "Depressive Symptoms",
+                      scoping = "Dyadic Coping",
+                      yrsliv = "Years Lived Together",
+                      rage = "Respndent's Age",
+                      postgrad = "College and Above", 
+                      fem = "Respodent's Gender", 
+                      pfem = "Partner's Gender", 
+                      race = "Race", 
+                      hhincome_max = "Household Income",
+                      kidage = "Having Kids under 18")
+   
+
+df$genrelns <- droplevels(df$genrelns)
+
+```
+
+\newpage
+
+```{r Descriptive_Table, echo=FALSE, message=FALSE, warning=FALSE}
+des_table1 <- df%>%
+tbl_summary(  missing = "no", 
+               type = list(where(is.numeric) ~ "continuous"),
+               statistic = list(all_categorical() ~ "{n} ({p}%)", 
+               all_continuous() ~ "{mean} ({sd})"),
+               digits = all_continuous() ~ 2,
+               include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
+  modify_header(update = list(label ~ "**Variables**"))%>%
+  modify_footnote(all_stat_cols() ~ "N (Percentage in Parentheses)")%>%
+  bold_labels()
+
+des_table <- df%>%
+tbl_summary( by = genrelns, missing = "no", 
+               type = list(where(is.numeric) ~ "continuous"),
+               statistic = list(all_categorical() ~ "{n} ({p}%)", 
+               all_continuous() ~ "{mean} ({sd})"),
+               digits = all_continuous() ~ 2,
+               include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
+  modify_header(update = list(label ~ "**Variables**"))%>%
+  modify_footnote(all_stat_cols() ~ "N (Percentage in Parentheses)")%>%
+  bold_labels()
+
+full_table <- tbl_merge(tbls = list(des_table1, des_table))%>%
+  as_flex_table()
+
+full_table <-  full_table %>%
+  flextable::add_footer_lines("Data from HARP T1")%>%
+  flextable::set_caption(caption = "Table 1: Descriptive Statistics by Gender-Relational Contexts")%>%
+  flextable::line_spacing(space = 0.4, part = "body")%>%
+  flextable::style(pr_t = fp_text(font.family = "serif"), part = "all")
+full_table
+
+```
+
+
+```{r Figures_Depressive_Sym, echo=FALSE, warning=FALSE, fig.asp = 0.5, fig.width = 12, out.width = "120%"}
+
+format <-  theme_minimal() + 
+            theme(axis.text = element_text(size = 15, face = "bold"),
+                 axis.title = element_text(size=16, face = "bold"), 
+                 legend.title = element_text(size = 18, face = "bold"),
+                 legend.text = element_text(size = 16),
+                 strip.text = element_text(size=14, face = "bold"),
+                 text = element_text('sans')) 
+
+
+
+fig1 <- ggplot(df, aes(x = scoping, 
+                y = depsym)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") +
+   labs(
+    x = "Dyadic Coping",
+    y = "Depressive Symptoms") + format
+  
+
+
+ fig2<-ggplot(df, aes(x = genrelns, y = depsym)) +
+   geom_bar(stat = "summary", fun = mean, 
+            aes(fill = genrelns)) +  
+   geom_errorbar(stat = "summary", 
+                 fun.data = mean_cl_normal, 
+                 width = 0.2) + 
+   scale_fill_grey(start = 0, end = .7)+
+    labs(
+    x = "Gender-Relational",
+    y = "Depressive Symptoms",
+    fill = NULL) + format
+
+
+fig1
+
+fig2
+
+```
+
+\newpage
+
+```{r Regression_Table, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+mod1 <- lmer(depsym ~ scoping + genrelns + rage + yrsliv + race + postgrad + (1 | cid), data = df, REML = FALSE)
+
+mod2 <- lmer(depsym ~ scoping * genrelns + rage + yrsliv + race + postgrad + (1 | cid), data = df, REML = FALSE)
+
+
+ds_mods <- list("DD 1"  = mod1, 
+                     "DD 2"  = mod2)
+
+regtab1 <- modelsummary(ds_mods,
+                        shape =  term + statistic ~ model ,
+                        fmt =2, ## for decimal points
+                        statistic = "std.error",
+                        stars = TRUE, 
+                        output = "flextable")
+
+cm_ds <- c('scoping'    = 'Dyadic Coping',
+        'genrelnsMan w/Wom' = 'Man w/Wom (Ref = M/M)', 
+        'genrelnsWom w/Man' = "Wom w/Man", 
+        'genrelnsWom w/Wom' = "Wom w/Wom", 
+        'scoping × genrelnsMan w/Wom' = 'Dyadic Coping x MW', 
+        'scoping × genrelnsWom w/Man' = 'Dyadic Coping x WM', 
+        'scoping × genrelnsWom w/Wom' = 'Dyadic Coping x WW', 
+        'rage' = 'Age', 
+        'yrsliv' = 'Rel. Duration (Year)', 
+        'racenon-white' = 'non-White (Ref = White)',
+        'postgradpostgrad' = '>College (Ref = College or Less)')
+
+regtab2 <- modelsummary(ds_mods,
+                        shape =  term + statistic ~ model ,
+                        fmt =2, ## for decimal points
+                        statistic = "std.error",
+                        stars = TRUE, 
+                        coef_omit = "Intercept|SD.*",
+                        coef_map = cm_ds,
+                        output = "flextable")
+
+
+get_gof(mod1)
+
+f <- function(x) format(round(x, 0), big.mark=",") # thousand separator
+gm <- list(
+  list("raw" = "nobs", "clean" = "N", "fmt" = f),
+  list("raw" = "aic", "clean" = "AIC", "fmt" = f), 
+  list("raw" = "bic", "clean" = "BIC", "fmt" = f), 
+  list("raw" = "r2.conditional", "clean" = "Cond. R-Squared", "fmt" = 2))
+
+regtab2 <- modelsummary(ds_mods,
+                        shape =  term + statistic ~ model ,
+                        fmt =2, ## for decimal points
+                        statistic = "std.error",
+                        stars = TRUE, 
+                        coef_omit = "Intercept|SD.*",
+                        coef_map = cm_ds, gof_map = gm,
+                        output = "flextable")
+
+
+modelsummary(ds_mods,
+             shape =  term + statistic ~ model ,
+             fmt =2, ## for decimal points
+             statistic = "std.error",
+             stars = TRUE, 
+             coef_omit = "Intercept|SD.*",
+             coef_map = cm_ds, gof_map = gm,
+             output = "flextable")%>%
+            flextable::autofit()%>%
+            flextable::style(pr_t = fp_text(font.family = "Times New Roman"), part = "all")%>%
+            flextable::add_footer_lines("Data from HARP 2015")%>%
+            flextable::set_caption(caption = "Mixed-Effects Models on Dep. Symptoms")
+
+
+```
+
+\newpage
+
+```{r Figures_Reg, echo=FALSE, message=FALSE, warning=FALSE, fig.asp = 0.5, fig.width = 12, out.width = "120%"}
+
+
+pred_ds <-  ggpredict(mod2, terms = c("scoping", "genrelns"))
+
+data.frame(pred_ds)
+
+
+pd <- position_dodge(width = 0.4)
+
+
+ggplot(pred_ds, aes(x = x, y = predicted, 
+                 color = group)) +
+  geom_line(position = pd) +  
+  geom_point(aes(shape = group), size = 3, position = pd) +
+  geom_errorbar(aes(ymin = conf.low,
+                    ymax = conf.high),
+                position = pd, 
+                width = 0.3 ,linewidth = 0.3)+
+  scale_color_grey(start = 0, end = .7)+
+  labs(
+    x = "Dyadic Coping at W4",
+    y = "Pred. Dep. Sym.",
+    color = "Gender-Relational", shape = "Gender-Relational"
+  ) + format
+
+
+
+```
+
+
