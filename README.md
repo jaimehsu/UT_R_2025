@@ -5,10 +5,13 @@
 Software: R, RStudio, SublimeText (recommended for a cleaner coding environment)
 
 Main packages: 
-Graphs  - ggplot2   (cheat sheet: https://statsandr.com/blog/files/ggplot2-cheatsheet.pdf) /
-Tables  - gtsummary (overview: https://www.danieldsjoberg.com/gtsummary/ ) /
-          flextable (cheat sheet: https://ardata-fr.github.io/flextable-book/static/pdf/cheat_sheet_flextable.pdf)/
-          modelsummary (overview: https://modelsummary.com/articles/modelsummary.html)
+Graphs  - 
+ggplot2   (cheat sheet: https://statsandr.com/blog/files/ggplot2-cheatsheet.pdf)
+
+Tables  - 
+gtsummary (overview: https://www.danieldsjoberg.com/gtsummary/ ) 
+flextable (cheat sheet: https://ardata-fr.github.io/flextable-book/static/pdf/cheat_sheet_flextable.pdf)
+modelsummary (overview: https://modelsummary.com/articles/modelsummary.html)
 
 Sample data: truncated HARP T1 Data
 
