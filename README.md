@@ -1,6 +1,4 @@
-# UT SGSC R Workshop 2025
-
-# Automating Research Output
+# UT SGSC R Workshop 2025: Automating Research Output
 
 Software: R, RStudio, SublimeText (recommended for a cleaner coding environment)
 
