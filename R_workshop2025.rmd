@@ -13,6 +13,9 @@ fontsize: 12pt
 ---
 
 ```{r setup, include=FALSE}
+
+# Always load required packages first
+
 library(tibble)
 library(gtsummary)
 library(tidyverse)
@@ -27,9 +30,11 @@ library(modelsummary)
 library(lmerTest)
 library(ggeffects)
 
+# May introduce here() for workstation
 
 df <- read_dta("/Users/AntonieHsu/Library/CloudStorage/Box-Box/Teaching Materials/R workshop/2025/2025workshop_rdata.dta")
 
+# Short review of tidyverse (maybe introduce tidylog)
 
 df<- df%>%
   mutate(genrelns = to_factor(genrelns),
@@ -42,12 +47,10 @@ df<- df%>%
          hhincome_max = to_factor(hhincome_max), 
          kidage = to_factor(kidage))
  
-  
-
 df<- df%>%
   set_variable_labels(genrelns = "Gender-Relational Contexts", 
                       depsym = "Depressive Symptoms",
-                      scoping = "Dyadic Coping",
+                      scoping = "Spousal Support",
                       yrsliv = "Years Lived Together",
                       rage = "Respndent's Age",
                       postgrad = "College and Above", 
@@ -65,11 +68,16 @@ df$genrelns <- droplevels(df$genrelns)
 \newpage
 
 ```{r Descriptive_Table, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+## This is a more complicated table, because I want to show the descriptives for the whole sample and by contexts. 
+## Thus, we make two table objects and then tbl_merge them. 
+
 des_table1 <- df%>%
-tbl_summary(  missing = "no", 
+   tbl_summary(missing = "no", # removing missing column
                type = list(where(is.numeric) ~ "continuous"),
-               statistic = list(all_categorical() ~ "{n} ({p}%)", 
-               all_continuous() ~ "{mean} ({sd})"),
+               statistic = list(all_categorical() ~ "{n} ({p}%)",     # define the statistics for cat. and cont.
+                                all_continuous() ~ "{mean} ({sd})"),
                digits = all_continuous() ~ 2,
                include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
   modify_header(update = list(label ~ "**Variables**"))%>%
@@ -77,18 +85,19 @@ tbl_summary(  missing = "no",
   bold_labels()
 
 des_table <- df%>%
-tbl_summary( by = genrelns, missing = "no", 
+  tbl_summary(by = genrelns, missing = "no", 
                type = list(where(is.numeric) ~ "continuous"),
                statistic = list(all_categorical() ~ "{n} ({p}%)", 
-               all_continuous() ~ "{mean} ({sd})"),
+                                all_continuous() ~ "{mean} ({sd})"),
                digits = all_continuous() ~ 2,
                include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
   modify_header(update = list(label ~ "**Variables**"))%>%
   modify_footnote(all_stat_cols() ~ "N (Percentage in Parentheses)")%>%
   bold_labels()
 
-full_table <- tbl_merge(tbls = list(des_table1, des_table))%>%
-  as_flex_table()
+full_table <- tbl_merge(tbls = list(des_table1, des_table), 
+                        tab_spanner = c("**Full Sample**", "**By GRCs**"))%>%
+              as_flex_table()
 
 full_table <-  full_table %>%
   flextable::add_footer_lines("Data from HARP T1")%>%
@@ -102,6 +111,7 @@ full_table
 
 ```{r Figures_Depressive_Sym, echo=FALSE, warning=FALSE, fig.asp = 0.5, fig.width = 12, out.width = "120%"}
 
+## All the formatting required is here:
 format <-  theme_minimal() + 
             theme(axis.text = element_text(size = 15, face = "bold"),
                  axis.title = element_text(size=16, face = "bold"), 
@@ -110,29 +120,25 @@ format <-  theme_minimal() +
                  strip.text = element_text(size=14, face = "bold"),
                  text = element_text('sans')) 
 
+## Thanks to Shelley I can add these codes in this workshop.
 
-
-fig1 <- ggplot(df, aes(x = scoping, 
-                y = depsym)) + 
-  geom_point() + 
-  geom_smooth(method = "lm") +
-   labs(
-    x = "Dyadic Coping",
-    y = "Depressive Symptoms") + format
+fig1 <- ggplot(df, aes(x = scoping, y = depsym)) + 
+        geom_point() + 
+        geom_smooth(method = "lm") +
+        labs(x = "Spousal Support",
+             y = "Depressive Symptoms") + format
   
 
-
- fig2<-ggplot(df, aes(x = genrelns, y = depsym)) +
-   geom_bar(stat = "summary", fun = mean, 
-            aes(fill = genrelns)) +  
-   geom_errorbar(stat = "summary", 
-                 fun.data = mean_cl_normal, 
-                 width = 0.2) + 
-   scale_fill_grey(start = 0, end = .7)+
-    labs(
-    x = "Gender-Relational",
-    y = "Depressive Symptoms",
-    fill = NULL) + format
+fig2<- ggplot(df, aes(x = genrelns, y = depsym)) +
+       geom_bar(stat = "summary", fun = mean, aes(fill = genrelns)) +  
+       geom_errorbar(stat = "summary", 
+                     fun.data = mean_cl_normal, 
+                     width = 0.2) + 
+       scale_fill_grey(start = 0, end = .7)+
+       labs(x = "Gender-Relational",
+            y = "Depressive Symptoms",
+            fill = NULL)+
+       format + theme(legend.position="none")
 
 
 fig1
@@ -145,6 +151,7 @@ fig2
 
 ```{r Regression_Table, echo=FALSE, message=FALSE, warning=FALSE}
 
+## Mixed-effects multilevel modeling
 
 mod1 <- lmer(depsym ~ scoping + genrelns + rage + yrsliv + race + postgrad + (1 | cid), data = df, REML = FALSE)
 
@@ -152,7 +159,7 @@ mod2 <- lmer(depsym ~ scoping * genrelns + rage + yrsliv + race + postgrad + (1 
 
 
 ds_mods <- list("DD 1"  = mod1, 
-                     "DD 2"  = mod2)
+                "DD 2"  = mod2)
 
 regtab1 <- modelsummary(ds_mods,
                         shape =  term + statistic ~ model ,
@@ -161,31 +168,32 @@ regtab1 <- modelsummary(ds_mods,
                         stars = TRUE, 
                         output = "flextable")
 
-cm_ds <- c('scoping'    = 'Dyadic Coping',
+cm_ds <- c('scoping'    = 'Spousal Support',
         'genrelnsMan w/Wom' = 'Man w/Wom (Ref = M/M)', 
         'genrelnsWom w/Man' = "Wom w/Man", 
         'genrelnsWom w/Wom' = "Wom w/Wom", 
-        'scoping × genrelnsMan w/Wom' = 'Dyadic Coping x MW', 
-        'scoping × genrelnsWom w/Man' = 'Dyadic Coping x WM', 
-        'scoping × genrelnsWom w/Wom' = 'Dyadic Coping x WW', 
+        'scoping:genrelnsMan w/Wom' = 'Spousal Support x MW', 
+        'scoping:genrelnsWom w/Man' = 'Spousal Support x WM', 
+        'scoping:genrelnsWom w/Wom' = 'Spousal Support x WW', 
         'rage' = 'Age', 
         'yrsliv' = 'Rel. Duration (Year)', 
         'racenon-white' = 'non-White (Ref = White)',
-        'postgradpostgrad' = '>College (Ref = College or Less)')
+        'postgradpostgrad' = '>College (Ref = College or Less)' )
 
-regtab2 <- modelsummary(ds_mods,
+regtab1 <- modelsummary(ds_mods,
                         shape =  term + statistic ~ model ,
                         fmt =2, ## for decimal points
-                        statistic = "std.error",
+                        statistic = "std.error", # can change to ci, can exponentiate
                         stars = TRUE, 
                         coef_omit = "Intercept|SD.*",
                         coef_map = cm_ds,
                         output = "flextable")
 
 
-get_gof(mod1)
+get_gof(mod1) # goodness of fit statistics
 
 f <- function(x) format(round(x, 0), big.mark=",") # thousand separator
+
 gm <- list(
   list("raw" = "nobs", "clean" = "N", "fmt" = f),
   list("raw" = "aic", "clean" = "AIC", "fmt" = f), 
@@ -241,7 +249,7 @@ ggplot(pred_ds, aes(x = x, y = predicted,
                 width = 0.3 ,linewidth = 0.3)+
   scale_color_grey(start = 0, end = .7)+
   labs(
-    x = "Dyadic Coping at W4",
+    x = "Spousal Support",
     y = "Pred. Dep. Sym.",
     color = "Gender-Relational", shape = "Gender-Relational"
   ) + format
