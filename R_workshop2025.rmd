@@ -79,9 +79,11 @@ des_table1 <- df%>%
                                 all_continuous() ~ "{mean} ({sd})"),
                digits = all_continuous() ~ 2,
                include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
-  modify_header(update = list(label ~ "**Variables**"))%>%
+  modify_header(label = "**Variables**")%>%
   modify_footnote(all_stat_cols() ~ "N (Percentage in Parentheses)")%>%
   bold_labels()
+
+## show_header_names(des_table1)
 
 des_table <- df%>%
   tbl_summary(by = genrelns, missing = "no", 
@@ -90,7 +92,7 @@ des_table <- df%>%
                                 all_continuous() ~ "{mean} ({sd})"),
                digits = all_continuous() ~ 2,
                include = c(depsym, scoping, fem, pfem, yrsliv, rage, race, postgrad, hhincome_max, kidage))%>%
-  modify_header(update = list(label ~ "**Variables**"))%>%
+  modify_header(label = "**Variables**")%>%
   modify_footnote(all_stat_cols() ~ "N (Percentage in Parentheses)")%>%
   bold_labels()
 
@@ -113,12 +115,12 @@ full_table
 ## All the formatting required is here:
 # "plain", "italic", "bold", "bold.italic"
 format <-  theme_minimal() + 
-            theme(axis.text = element_text(size = 15, face = c("bold")),
+            theme(axis.text = element_text(size = 15, face = "bold"),
                  axis.title = element_text(size=16, face = "bold"), 
                  legend.title = element_text(size = 18, face = "bold"),
                  legend.text = element_text(size = 16),
                  strip.text = element_text(size=14, face = "bold"),
-                 text = element_text('sans')) 
+                 text = element_text('Comic Sans MS')) # 'serif', 'sans' 
 
 ## Thanks to Shelley I can add these codes in this workshop.
 
@@ -130,11 +132,11 @@ fig1 <- ggplot(df, aes(x = scoping, y = depsym)) +
   
 
 fig2<- ggplot(df, aes(x = genrelns, y = depsym)) +
-       geom_point(stat = "summary", fun = mean, aes(color = genrelns, size =2)) +  
+       geom_bar(stat = "summary", fun = mean, aes(fill = genrelns)) +  
        geom_errorbar(stat = "summary", 
                      fun.data = mean_cl_normal, 
-                     width = 0.2, aes(color = genrelns)) + 
-       scale_color_grey(start = 0, end = .7)+
+                     width = 0.2) + 
+       scale_fill_grey(start = .2, end = .7)+
   # scale_y_continuous(limits=c(10, 20), labels = scales::number_format(accuracy = 1)) +
        labs(x = "Gender-Relational",
             y = "Depressive Symptoms",
