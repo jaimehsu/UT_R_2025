@@ -16,19 +16,18 @@ fontsize: 12pt
 
 # Always load required packages first
 
-library(tibble)
-library(gtsummary)
-library(tidyverse)
-library(arsenal)
-library(haven)
-library(survey)
-library(labelled)
-library(table1)
-library(officer)
-library(lme4)
-library(modelsummary)
-library(lmerTest)
-library(ggeffects)
+library(tidyverse)       # data cleaning/management
+library(haven)           # loading stata data
+library(survey)          # Survey Design
+library(labelled)        # used to deal with data labels
+library(gtsummary)       # making descriptive tables
+library(modelsummary)    # making regression tables
+library(flextable)       # flextable()
+library(officer)         # font - flextable
+library(lme4)            # multilevel modeling 
+library(lmerTest)        # multilevel modeling 
+library(ggeffects)       # post-estimations - > for visualization
+library(marginaleffects) # post-estimations - > for visualization
 
 # May introduce here() for workstation
 
