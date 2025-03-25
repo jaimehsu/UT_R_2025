@@ -21,6 +21,7 @@ library(haven)           # loading stata data
 library(survey)          # Survey Design
 library(labelled)        # used to deal with data labels
 library(gtsummary)       # making descriptive tables
+library(ggplot2)
 library(modelsummary)    # making regression tables
 library(flextable)       # flextable()
 library(officer)         # font - flextable
@@ -96,7 +97,7 @@ des_table <- df%>%
   bold_labels()
 
 full_table <- tbl_merge(tbls = list(des_table1, des_table), 
-                        tab_spanner = c("**Full Sample**", "**By GRCs**"))%>%
+                        tab_spanner = c("**Full Sample**", "**By Family Types**"))%>%
               as_flex_table()
 
 full_table <-  full_table %>%
@@ -160,8 +161,8 @@ mod1 <- lmer(depsym ~ scoping + genrelns + rage + yrsliv + race + postgrad + (1 
 mod2 <- lmer(depsym ~ scoping * genrelns + rage + yrsliv + race + postgrad + (1 | cid), data = df, REML = FALSE)
 
 
-ds_mods <- list("DD 1"  = mod1, 
-                "DD 2"  = mod2)
+ds_mods <- list("DS 1"  = mod1, 
+                "DS 2"  = mod2)
 
 regtab1 <- modelsummary(ds_mods,
                         shape =  term + statistic ~ model ,
@@ -180,14 +181,13 @@ cm_ds <- c('scoping'    = 'Spousal Support',
         'rage' = 'Age', 
         'yrsliv' = 'Rel. Duration (Year)', 
         'racenon-white' = 'non-White (Ref = White)',
-        'postgradpostgrad' = '>College (Ref = College or Less)' )
+        'postgradpostgrad' = '>College (Ref = College or Less)')
 
 regtab1 <- modelsummary(ds_mods,
                         shape =  term + statistic ~ model ,
                         fmt =2, ## for decimal points
                         statistic = "std.error", # can change to ci, can exponentiate
                         stars = TRUE, 
-                        coef_omit = "Intercept|SD.*",
                         coef_map = cm_ds,
                         output = "flextable")
 
@@ -207,8 +207,8 @@ regtab2 <- modelsummary(ds_mods,
                         fmt =2, ## for decimal points
                         statistic = "std.error",
                         stars = TRUE, 
-                        coef_omit = "Intercept|SD.*",
-                        coef_map = cm_ds, gof_map = gm,
+                        coef_map = cm_ds, 
+                        gof_map = gm,
                         output = "flextable")
 
 
