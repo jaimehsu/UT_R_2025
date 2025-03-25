@@ -75,7 +75,6 @@ df$genrelns <- droplevels(df$genrelns)
 
 des_table1 <- df%>%
    tbl_summary(missing = "no", # removing missing column
-               type = list(where(is.numeric) ~ "continuous"),
                statistic = list(all_categorical() ~ "{n} ({p}%)",     # define the statistics for cat. and cont.
                                 all_continuous() ~ "{mean} ({sd})"),
                digits = all_continuous() ~ 2,
@@ -112,8 +111,9 @@ full_table
 ```{r Figures_Depressive_Sym, echo=FALSE, warning=FALSE, fig.asp = 0.5, fig.width = 12, out.width = "120%"}
 
 ## All the formatting required is here:
+# "plain", "italic", "bold", "bold.italic"
 format <-  theme_minimal() + 
-            theme(axis.text = element_text(size = 15, face = "bold"),
+            theme(axis.text = element_text(size = 15, face = c("bold")),
                  axis.title = element_text(size=16, face = "bold"), 
                  legend.title = element_text(size = 18, face = "bold"),
                  legend.text = element_text(size = 16),
@@ -130,11 +130,12 @@ fig1 <- ggplot(df, aes(x = scoping, y = depsym)) +
   
 
 fig2<- ggplot(df, aes(x = genrelns, y = depsym)) +
-       geom_bar(stat = "summary", fun = mean, aes(fill = genrelns)) +  
+       geom_point(stat = "summary", fun = mean, aes(color = genrelns, size =2)) +  
        geom_errorbar(stat = "summary", 
                      fun.data = mean_cl_normal, 
-                     width = 0.2) + 
-       scale_fill_grey(start = 0, end = .7)+
+                     width = 0.2, aes(color = genrelns)) + 
+       scale_color_grey(start = 0, end = .7)+
+  # scale_y_continuous(limits=c(10, 20), labels = scales::number_format(accuracy = 1)) +
        labs(x = "Gender-Relational",
             y = "Depressive Symptoms",
             fill = NULL)+
